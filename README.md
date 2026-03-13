@@ -3,7 +3,7 @@
 
 A highly customizable Home Assistant Lovelace card for monitoring routers, access points, and mesh network devices.
 
-[Image: Router Card Preview]
+![Preview](photo_2026-03-13_23-04-43.jpg)
 
 ## 🌟 Features
 
