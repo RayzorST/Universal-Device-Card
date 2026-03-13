@@ -41,6 +41,14 @@ export class ListSection extends BaseSection {
       return parts.join(' ');
     }
     
+    // Для очень больших чисел используем сокращение
+    if (numValue >= 1000000) {
+      return `${(numValue / 1000000).toFixed(1)}M${unit || ''}`;
+    }
+    if (numValue >= 1000) {
+      return `${(numValue / 1000).toFixed(1)}K${unit || ''}`;
+    }
+    
     return `${numValue}${unit || ''}`;
   }
 
@@ -75,7 +83,7 @@ export class ListSection extends BaseSection {
                   ${sensor.icon ? html`<ha-icon icon="${sensor.icon}"></ha-icon>` : nothing}
                   <span class="list-name">${sensor.name}</span>
                 </div>
-                <span class="list-value">${displayValue}</span>
+                <span class="list-value" title="${displayValue}">${displayValue}</span>
               </div>
             `;
           })}
@@ -90,16 +98,33 @@ export class ListSection extends BaseSection {
       css`
         .list-section {
           width: 100%;
-          margin-top: 16px; /* Добавил отступ сверху */
+          margin-top: 16px;
+          overflow: hidden; /* Предотвращает вылезание контента */
         }
 
         .list-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
           gap: 8px;
+          width: 100%;
         }
 
+        /* Планшеты и маленькие экраны */
+        @media (max-width: 800px) {
+          .list-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        /* Мобильные устройства */
         @media (max-width: 600px) {
+          .list-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        /* Очень узкие карточки */
+        @media (max-width: 350px) {
           .list-grid {
             grid-template-columns: 1fr;
           }
@@ -113,6 +138,9 @@ export class ListSection extends BaseSection {
           background: var(--secondary-background-color, #f5f5f5);
           border-radius: 8px;
           transition: all 0.2s ease;
+          min-width: 0; /* Важно для правильного сжатия */
+          width: 100%;
+          box-sizing: border-box;
         }
 
         .list-item.error {
@@ -139,6 +167,7 @@ export class ListSection extends BaseSection {
           gap: 8px;
           overflow: hidden;
           flex: 1;
+          min-width: 0; /* Позволяет сжиматься */
         }
 
         .list-left ha-icon { 
@@ -158,6 +187,8 @@ export class ListSection extends BaseSection {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          flex: 1;
+          min-width: 30px; /* Минимальная ширина для имени */
         }
 
         .dark .list-name {
@@ -166,16 +197,52 @@ export class ListSection extends BaseSection {
 
         .list-value {
           font-size: 14px;
-          font-weight: 400; /* Изменил с 600 на 400 - обычный текст */
-          color: var(--primary-text-color, #333); /* Изменил на обычный цвет текста */
+          font-weight: 400;
+          color: var(--primary-text-color, #333);
           white-space: nowrap;
           margin-left: 8px;
           flex-shrink: 0;
+          max-width: 120px; /* Ограничиваем максимальную ширину значения */
+          overflow: hidden;
+          text-overflow: ellipsis;
+          text-align: right;
+        }
+
+        /* Для очень маленьких экранов уменьшаем размер значения */
+        @media (max-width: 400px) {
+          .list-value {
+            max-width: 80px;
+            font-size: 12px;
+          }
+          
+          .list-name {
+            font-size: 12px;
+          }
         }
 
         .list-value.error {
           color: #e74c3c;
           font-weight: 400;
+        }
+
+        /* Если карточка становится слишком узкой, меняем структуру */
+        @media (max-width: 250px) {
+          .list-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+          }
+          
+          .list-left {
+            width: 100%;
+          }
+          
+          .list-value {
+            margin-left: 24px; /* Выравниваем с учетом иконки */
+            width: calc(100% - 24px);
+            max-width: none;
+            text-align: left;
+          }
         }
       `
     ];

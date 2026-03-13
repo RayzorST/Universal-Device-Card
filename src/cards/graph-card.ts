@@ -1,132 +1,181 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { BaseCard } from './base-card';
 import { HistoryData } from '../types/config';
+import Graph from '../utils/graph';
 
 @customElement('router-graph-card')
 export class GraphCard extends BaseCard {
   @property({ type: Object }) graphData?: Record<string, HistoryData[]>;
-  
-  // Кешируем последние вычисления для производительности
-  private _cachedPoints: { points: { x: number; y: number }[]; min: number; max: number } | null = null;
-  private _lastEntityId: string = '';
-  private _lastDataState: string = '';
+  @property({ type: Object }) hass?: any;
 
-  private _getGraphPoints(): { points: { x: number; y: number }[]; min: number; max: number } {
-    const entityId = this.sensor.entity;
-    const currentState = this.data.state;
-    
-    // Используем кеш если данные не изменились
-    if (this._cachedPoints && this._lastEntityId === entityId && this._lastDataState === currentState) {
-      return this._cachedPoints;
+  @state() private _loading = true;
+  @state() private _graphPoints: Array<[number, number, number, number]> = [];
+  @state() private _error = false;
+
+  private _graph: Graph | null = null;
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._initGraph();
+  }
+
+  updated(changedProps: Map<string, any>) {
+    if (changedProps.has('sensor') || changedProps.has('graphData')) {
+      this._initGraph();
     }
-    
-    const history = this.graphData?.[entityId] || [];
-    const currentValue = parseFloat(currentState) || 0;
-    
-    // Если нет истории, показываем только текущее значение
-    if (history.length < 2) {
-      const result = { points: [], min: 0, max: 100 };
-      this._cachedPoints = result;
-      this._lastEntityId = entityId;
-      this._lastDataState = currentState;
-      return result;
-    }
-    
-    // Берем последние 24 точки для производительности
-    const points = history.slice(-24);
-    const values = points.map(p => parseFloat(p.state) || 0);
-    
-    // Добавляем текущее значение если оно значительно отличается
-    if (values.length > 0 && Math.abs(values[values.length - 1] - currentValue) > 0.01) {
-      values.push(currentValue);
-    }
-    
-    const maxValue = Math.max(...values, this.sensor.max || Math.max(...values, currentValue));
-    const minValue = Math.min(...values, this.sensor.min || Math.min(...values, 0));
-    const range = maxValue - minValue || 1;
-    
+  }
+
+  private _initGraph() {
     const width = 200;
     const height = this._getGraphHeight();
-    
-    const graphPoints = values.map((val, i) => {
-      const x = (i / (values.length - 1)) * width;
-      const normalizedValue = (val - minValue) / range;
-      const y = height - (normalizedValue * height * 0.9) - (height * 0.05);
-      return { x, y };
-    });
-    
-    const result = { points: graphPoints, min: minValue, max: maxValue };
-    this._cachedPoints = result;
-    this._lastEntityId = entityId;
-    this._lastDataState = currentState;
-    
-    return result;
+    const margin = { x: 0, y: 0 };
+    const hours = this.sensor.hours_to_show || 24;
+    const points = 4; // увеличим для плавности
+    const aggregateFunc = this.sensor.aggregate || 'avg';
+    const smoothing = this.sensor.smoothing !== false;
+
+    this._graph = new Graph(
+      width, 
+      height, 
+      margin, 
+      hours, 
+      points, 
+      aggregateFunc,
+      'interval',
+      smoothing,
+      false
+    );
+
+    // Если данные уже есть в graphData
+    if (this.graphData && this.graphData[this.sensor.entity]) {
+      this._processData(this.graphData[this.sensor.entity]);
+    } 
+    // Если есть hass, загружаем данные
+    else if (this.hass) {
+      this._loadHistory();
+    }
+  }
+
+  private async _loadHistory() {
+    if (!this.hass || !this.sensor?.entity || !this._graph) {
+      return;
+    }
+
+    this._loading = true;
+    this._error = false;
+
+    const hours = this.sensor.hours_to_show || 24;
+    const endTime = new Date();
+    const startTime = new Date(endTime.getTime() - hours * 60 * 60 * 1000);
+
+    try {
+      const history = await this.hass.callApi(
+        'GET',
+        `history/period/${startTime.toISOString()}?filter_entity_id=${this.sensor.entity}&minimal_response`
+      );
+
+      if (!this.isConnected) return;
+
+      const entityHistory = history?.[0] || [];
+      this._processData(entityHistory);
+    } catch (e) {
+      console.error('Failed to load history for', this.sensor.entity, e);
+      this._error = true;
+    } finally {
+      this._loading = false;
+    }
+  }
+
+  private _processData(history: HistoryData[]) {
+    if (!this._graph || !history || history.length < 2) {
+      this._graphPoints = [];
+      return;
+    }
+
+    this._graph.history = history;
+    this._graph.update();
+
+    this._graphPoints = this._graph.getPoints();
+    this.requestUpdate();
   }
 
   private _getGraphHeight(): number {
     const detail = this.sensor.graph_detail || 2;
-    if (detail === 1) return 36; // Чуть меньше
+    if (detail === 1) return 36;
     if (detail === 3) return 60;
     return 45;
   }
 
-  private _generateSmoothPath(points: { x: number; y: number }[]): string {
+  private _generatePath(points: Array<[number, number, number, number]>): string {
     if (points.length < 2) return '';
+
+    let path = `M${points[0][0]},${points[0][1]}`;
     
-    let path = `M ${points[0].x},${points[0].y} `;
-    
-    // Упрощенная интерполяция для производительности
-    for (let i = 0; i < points.length - 1; i++) {
-      const p1 = points[i];
-      const p2 = points[i + 1];
-      
-      const cp1x = p1.x + (p2.x - p1.x) * 0.25;
-      const cp1y = p1.y;
-      const cp2x = p2.x - (p2.x - p1.x) * 0.25;
-      const cp2y = p2.y;
-      
-      path += `C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y} `;
+    for (let i = 1; i < points.length; i++) {
+      path += ` L${points[i][0]},${points[i][1]}`;
     }
-    
+
     return path;
   }
 
-  private _generateAreaPoints(points: { x: number; y: number }[]): string {
+  private _generateArea(points: Array<[number, number, number, number]>, height: number): string {
     if (points.length < 2) return '';
+
+    const firstPoint = points[0];
+    const lastPoint = points[points.length - 1];
     
-    const height = this._getGraphHeight();
-    let area = `0,${height} `;
-    area += points.map(p => `${p.x},${p.y}`).join(' ');
-    area += ` ${points[points.length - 1].x},${height}`;
+    let area = `M${firstPoint[0]},${firstPoint[1]}`;
     
+    for (let i = 1; i < points.length; i++) {
+      area += ` L${points[i][0]},${points[i][1]}`;
+    }
+    
+    area += ` L${lastPoint[0]},${height}`;
+    area += ` L${firstPoint[0]},${height}`;
+    area += ' Z';
+
     return area;
   }
 
   renderContent(): TemplateResult {
-    const { points, min, max } = this._getGraphPoints();
     const currentValue = parseFloat(this.data.state) || 0;
     const unit = this.sensor.unit || this.data.unit || '';
-    const detail = this.sensor.graph_detail || 2;
     const height = this._getGraphHeight();
     const width = 200;
-    
-    if (points.length < 2) {
+
+    if (this._loading) {
       return html`
-        <div class="graph-container" style="height: ${height}px">
+        <div class="graph-wrapper">
           <div class="graph-current">${currentValue.toFixed(1)}${unit}</div>
-          <div class="graph-placeholder">
-            <ha-icon icon="mdi:chart-line"></ha-icon>
-            <span>No data</span>
+          <div class="graph-container" style="height: ${height}px">
+            <div class="graph-placeholder">
+              <ha-icon icon="mdi:loading" class="spinning"></ha-icon>
+              <span>Loading...</span>
+            </div>
           </div>
         </div>
       `;
     }
-    
-    const smoothPath = this._generateSmoothPath(points);
-    const areaPoints = this._generateAreaPoints(points);
+
+    if (this._error || this._graphPoints.length < 2) {
+      return html`
+        <div class="graph-wrapper">
+          <div class="graph-current">${currentValue.toFixed(1)}${unit}</div>
+          <div class="graph-container" style="height: ${height}px">
+            <div class="graph-placeholder">
+              <ha-icon icon="mdi:chart-line"></ha-icon>
+              <span>No data</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    const path = this._generatePath(this._graphPoints);
+    const area = this._generateArea(this._graphPoints, height);
     const entityId = this.sensor.entity.replace(/[^a-zA-Z0-9]/g, '-');
-    
+
     return html`
       <div class="graph-wrapper">
         <div class="graph-current">${currentValue.toFixed(1)}${unit}</div>
@@ -140,14 +189,14 @@ export class GraphCard extends BaseCard {
               </linearGradient>
             </defs>
             
-            <polygon
-              points="${areaPoints}"
+            <path
+              d="${area}"
               fill="url(#grad-${entityId})"
               class="graph-area"
             />
             
             <path
-              d="${smoothPath}"
+              d="${path}"
               fill="none"
               stroke="var(--accent-color, var(--primary-color, #03a9f4))"
               stroke-width="2"
@@ -156,10 +205,10 @@ export class GraphCard extends BaseCard {
               class="graph-line"
             />
             
-            ${detail === 3 ? points.map(p => html`
+            ${this.sensor.graph_detail === 3 ? this._graphPoints.map(point => html`
               <circle
-                cx="${p.x}"
-                cy="${p.y}"
+                cx="${point[0]}"
+                cy="${point[1]}"
                 r="2"
                 fill="var(--accent-color, var(--primary-color, #03a9f4))"
                 stroke="var(--card-background-color, white)"
@@ -263,6 +312,15 @@ export class GraphCard extends BaseCard {
         .graph-placeholder ha-icon {
           --mdc-icon-size: 16px;
           color: var(--secondary-text-color);
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .spinning {
+          animation: spin 1s linear infinite;
         }
       `
     ];

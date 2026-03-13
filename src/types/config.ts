@@ -1,6 +1,6 @@
 // Типы для действий по нажатию
 export interface TapActionConfig {
-  action: 'more-info' | 'toggle' | 'call-service' | 'navigate' | 'url' | 'none';
+  action: 'more-info' | 'navigate' | 'url' | 'call-service' | 'toggle' | 'none';
   navigation_path?: string;
   url_path?: string;
   service?: string;
@@ -11,22 +11,25 @@ export interface TapActionConfig {
 export interface SensorConfig {
   entity: string;
   name: string;
-  unit?: string;
   icon?: string;
-  display_type?: 'bar' | 'number' | 'graph' | 'badge';
+  unit?: string;
+  display_type?: 'bar' | 'graph';  // Только bar и graph для top сенсоров
   graph_detail?: 1 | 2 | 3;
   hours_to_show?: number;
   min?: number;
   max?: number;
+  aggregate?: 'avg' | 'median' | 'max' | 'min' | 'first' | 'last' | 'sum' | 'delta' | 'diff';
+  smoothing?: boolean;
+  logarithmic?: boolean;
   tap_action?: TapActionConfig;
 }
 
 // Статус секция
 export interface StatusSectionConfig {
   enabled: boolean;
-  left_entity?: string;
+  left_entity: string;
   left_label?: string;
-  right_entity?: string;
+  right_entity: string;
   right_label?: string;
   tap_action?: TapActionConfig;
 }
@@ -34,7 +37,7 @@ export interface StatusSectionConfig {
 // Секция обновлений
 export interface UpdateSectionConfig {
   enabled: boolean;
-  entity?: string;
+  entity: string;
   label?: string;
   tap_action?: TapActionConfig;
 }
@@ -42,11 +45,11 @@ export interface UpdateSectionConfig {
 // Кнопка перезагрузки
 export interface RebootButtonConfig {
   enabled: boolean;
-  service?: string;
-  service_data?: Record<string, any>;
+  entity?: string;           // Заменяем service на entity
   confirmation?: boolean;
   label?: string;
   icon?: string;
+  service_data?: Record<string, any>; // Оставляем для совместимости
 }
 
 // Основная конфигурация карточки
@@ -59,14 +62,14 @@ export interface RouterCardConfig {
   update_section?: UpdateSectionConfig;
   status_section?: StatusSectionConfig;
   reboot_button?: RebootButtonConfig;
-  top_sensors?: SensorConfig[];
-  bottom_sensors?: SensorConfig[];
+  top_sensors: SensorConfig[];
+  bottom_sensors: SensorConfig[];
 }
 
 // Данные сенсора
 export interface SensorData {
   state: string;
-  attributes?: Record<string, any>;
+  attributes: Record<string, any>;
   unit?: string;
 }
 
@@ -74,6 +77,8 @@ export interface SensorData {
 export interface HistoryData {
   state: string;
   last_changed: string;
+  last_updated?: string;
+  attributes?: Record<string, any>;
 }
 
 // Интерфейс для свойств карточки

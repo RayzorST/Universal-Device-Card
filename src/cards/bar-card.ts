@@ -15,15 +15,15 @@ export class BarCard extends BaseCard {
   }
 
   renderContent(): TemplateResult {
-    const value = parseFloat(this.data.state);
     const barValue = this._calculateBarValue();
-    const barColor = this.getValueColor(value, this.sensor.min, this.sensor.max);
     const formatted = this.formatValue(this.data.state, this.sensor.unit || this.data.unit);
     
     return html`
-      <div class="card-value" style="color: ${barColor}">${formatted}</div>
-      <div class="card-bar">
-        <div class="card-bar-fill" style="width: ${barValue}%; background: ${barColor}"></div>
+      <div class="card-value">${formatted}</div>
+      <div class="card-bar-container">
+        <div class="card-bar">
+          <div class="card-bar-fill" style="width: ${barValue}%"></div>
+        </div>
       </div>
     `;
   }
@@ -34,12 +34,13 @@ export class BarCard extends BaseCard {
       css`
         .card {
           background: var(--secondary-background-color, #f5f5f5);
-          padding: 10px 14px 8px 14px;
           border-radius: 10px;
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          overflow: hidden;
           height: 100%;
+          padding: 0;
+          transition: all 0.2s ease;
         }
 
         .dark .card {
@@ -47,28 +48,67 @@ export class BarCard extends BaseCard {
         }
 
         .card-value {
-          font-size: 18px; /* Уменьшил с 22px */
+          font-size: 24px;
           font-weight: 600;
-          padding: 0;
-          transition: color 0.3s ease;
+          color: var(--primary-text-color);
+          padding: 0 12px 4px 12px; /* Убрал верхний padding, уменьшил нижний */
+          text-align: left;
+          line-height: 1.2;
+          word-break: break-word;
+        }
+
+        .card-bar-container {
+          padding: 0 12px 12px 12px;
+          width: 100%;
+          box-sizing: border-box;
+          flex: 1; /* Даем бару больше места */
+          display: flex;
+          align-items: flex-end; /* Выравниваем бар по нижнему краю */
         }
 
         .card-bar {
-          height: 4px;
-          background: #e0e0e0;
-          border-radius: 2px;
+          height: 20px; /* Увеличил высоту с 8px до 12px */
+          background: rgba(224, 224, 224, 0.5);
+          border-radius: 6px; /* Увеличил радиус для пропорциональности */
           overflow: hidden;
-          margin: 0 0 2px 0; /* Уменьшил отступ снизу */
+          width: 100%;
         }
 
         .dark .card-bar {
-          background: #2a2a4a;
+          background: rgba(42, 42, 74, 0.7);
         }
 
         .card-bar-fill {
           height: 100%;
-          border-radius: 2px;
+          border-radius: 6px; /* Увеличил радиус для пропорциональности */
           transition: width 0.3s ease;
+          background: var(--primary-color, #03a9f4);
+        }
+
+        /* Адаптивность для мобильных */
+        @media (max-width: 600px) {
+          .card-value {
+            font-size: 20px;
+            padding: 0 12px 2px 12px; /* Еще меньше отступ на мобильных */
+          }
+          
+          .card-bar {
+            height: 10px; /* Уменьшил, но все еще больше оригинала */
+          }
+          
+          .card-bar-container {
+            padding: 0 12px 10px 12px;
+          }
+        }
+
+        @media (max-width: 350px) {
+          .card-value {
+            font-size: 18px;
+          }
+          
+          .card-bar {
+            height: 8px;
+          }
         }
       `
     ];

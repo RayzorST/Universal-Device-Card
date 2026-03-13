@@ -52,7 +52,7 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
       },
       reboot_button: {
         enabled: false,
-        service: 'button.router_reboot_press',
+        entity: '',
         confirmation: true,
         label: 'Reboot',
         icon: 'mdi:restart',
@@ -205,7 +205,6 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
                 .hass=${this.hass}
                 .value=${updateSection.entity || ''}
                 @value-changed=${(e: any) => this._handleNestedChange('update_section', 'entity', e.detail.value)}
-                label="Update Entity"
                 allow-custom-entity
                 include-domains='["update", "binary_sensor"]'
               ></ha-entity-picker>
@@ -241,12 +240,13 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
 
           ${rebootConfig.enabled ? html`
             <div class="grid-2">
-              <ha-textfield
-                .value=${rebootConfig.service || 'button.router_reboot_press'}
-                @input=${(e: any) => this._handleNestedChange('reboot_button', 'service', e.target.value)}
-                label="Service"
-                placeholder="button.router_reboot_press"
-              ></ha-textfield>
+              <ha-entity-picker
+                .hass=${this.hass}
+                .value=${rebootConfig.entity || ''}
+                @value-changed=${(e: any) => this._handleNestedChange('reboot_button', 'entity', e.detail.value)}
+                allow-custom-entity
+                include-domains='["button", "script"]'
+              ></ha-entity-picker>
 
               <ha-textfield
                 .value=${rebootConfig.label || 'Reboot'}
@@ -293,18 +293,12 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
           </div>
 
           ${statusSection.enabled ? html`
-            <div class="info-box">
-              <ha-icon icon="${ICONS.INFORMATION}"></ha-icon>
-              <span>Left entity shows connection status, right entity shows WAN IP.</span>
-            </div>
-
             <h4>Left Column</h4>
             <div class="grid-2">
               <ha-entity-picker
                 .hass=${this.hass}
                 .value=${statusSection.left_entity || ''}
                 @value-changed=${(e: any) => this._handleNestedChange('status_section', 'left_entity', e.detail.value)}
-                label="Left Entity"
                 allow-custom-entity
               ></ha-entity-picker>
 
@@ -322,7 +316,6 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
                 .hass=${this.hass}
                 .value=${statusSection.right_entity || ''}
                 @value-changed=${(e: any) => this._handleNestedChange('status_section', 'right_entity', e.detail.value)}
-                label="Right Entity"
                 allow-custom-entity
               ></ha-entity-picker>
 
@@ -360,18 +353,6 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
             </ha-button>
           </div>
 
-          ${isTop ? html`
-            <div class="info-box">
-              <ha-icon icon="${ICONS.INFORMATION}"></ha-icon>
-              <span>For graph type: detail level (1=low, 2=medium, 3=high), hours to show (1-168).</span>
-            </div>
-          ` : html`
-            <div class="info-box">
-              <ha-icon icon="${ICONS.INFORMATION}"></ha-icon>
-              <span>List items show in 2 columns. You can set icon, name, unit and tap action.</span>
-            </div>
-          `}
-
           ${sensors.length === 0 ? html`
             <div class="empty-state">
               No sensors configured. Click "Add Sensor" to start.
@@ -401,6 +382,7 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
             ${hasIcon ? html`<ha-icon icon="${sensor.icon}" class="sensor-icon-preview"></ha-icon>` : ''}
             ${hasUnit ? html`<span class="sensor-unit-preview">(${sensor.unit})</span>` : ''}
             ${hasTapAction ? html`<span class="sensor-badge">tap</span>` : ''}
+            ${isTop && sensor.display_type ? html`<span class="sensor-type-badge">${sensor.display_type}</span>` : ''}
           </div>
           <ha-icon-button
             .label=${'Remove sensor'}
@@ -418,7 +400,6 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
                 .hass=${this.hass}
                 .value=${sensor.entity || ''}
                 @value-changed=${(e: any) => this._handleSensorChange(section, index, 'entity', e.detail.value)}
-                label="Entity"
                 allow-custom-entity
                 required
               ></ha-entity-picker>
@@ -452,29 +433,27 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
             ${isTop ? html`
               <div class="grid-2">
                 <ha-select
-                  .value=${sensor.display_type || 'number'}
+                  .value=${sensor.display_type || 'bar'}
                   @selected=${(e: any) => this._handleSensorChange(section, index, 'display_type', e.target.value)}
                   label="Display Type"
                   fixedMenuPosition
                   naturalMenuWidth
                 >
-                  <ha-list-item value="number">Number</ha-list-item>
                   <ha-list-item value="bar">Progress Bar</ha-list-item>
                   <ha-list-item value="graph">Graph</ha-list-item>
-                  <ha-list-item value="badge">Badge</ha-list-item>
                 </ha-select>
 
                 ${sensor.display_type === 'graph' ? html`
                   <ha-select
-                    .value=${sensor.graph_detail || 1}
+                    .value=${String(sensor.graph_detail || 2)}
                     @selected=${(e: any) => this._handleSensorChange(section, index, 'graph_detail', Number(e.target.value))}
                     label="Graph Detail"
                     fixedMenuPosition
                     naturalMenuWidth
                   >
-                    <ha-list-item value=${1}>Low (compact)</ha-list-item>
-                    <ha-list-item value=${2}>Medium</ha-list-item>
-                    <ha-list-item value=${3}>High (detailed)</ha-list-item>
+                    <ha-list-item value="1">Low (compact)</ha-list-item>
+                    <ha-list-item value="2">Medium</ha-list-item>
+                    <ha-list-item value="3">High (detailed)</ha-list-item>
                   </ha-select>
                 ` : ''}
               </div>
@@ -482,27 +461,53 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
               ${sensor.display_type === 'graph' ? html`
                 <ha-textfield
                   type="number"
-                  .value=${sensor.hours_to_show || 24}
+                  .value=${String(sensor.hours_to_show || 24)}
                   @input=${(e: any) => this._handleSensorChange(section, index, 'hours_to_show', Number(e.target.value))}
                   label="Hours to Show"
                   min="1"
                   max="168"
                   suffix="hours"
                 ></ha-textfield>
+
+                <div class="grid-2">
+                  <ha-formfield label="Smoothing">
+                    <ha-switch
+                      .checked=${sensor.smoothing !== false}
+                      @change=${(e: any) => this._handleSensorChange(section, index, 'smoothing', e.target.checked)}
+                    ></ha-switch>
+                  </ha-formfield>
+
+                  <ha-select
+                    .value=${sensor.aggregate || 'avg'}
+                    @selected=${(e: any) => this._handleSensorChange(section, index, 'aggregate', e.target.value)}
+                    label="Aggregation"
+                    fixedMenuPosition
+                    naturalMenuWidth
+                  >
+                    <ha-list-item value="avg">Average</ha-list-item>
+                    <ha-list-item value="max">Maximum</ha-list-item>
+                    <ha-list-item value="min">Minimum</ha-list-item>
+                    <ha-list-item value="last">Last</ha-list-item>
+                    <ha-list-item value="first">First</ha-list-item>
+                    <ha-list-item value="sum">Sum</ha-list-item>
+                    <ha-list-item value="delta">Delta</ha-list-item>
+                    <ha-list-item value="diff">Difference</ha-list-item>
+                  </ha-select>
+                </div>
               ` : ''}
 
               ${sensor.display_type === 'bar' ? html`
                 <div class="grid-2">
                   <ha-textfield
                     type="number"
-                    .value=${sensor.min ?? 0}
+                    .value=${String(sensor.min ?? 0)}
                     @input=${(e: any) => this._handleSensorChange(section, index, 'min', Number(e.target.value))}
                     label="Min Value"
                   ></ha-textfield>
 
                   <ha-textfield
                     type="number"
-                    .value=${sensor.max ?? 100}
+                    .value=${String(sensor.max ?? 100)}
                     @input=${(e: any) => this._handleSensorChange(section, index, 'max', Number(e.target.value))}
                     label="Max Value"
                   ></ha-textfield>
@@ -517,20 +522,6 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
               @value-changed=${(e: any) => this._handleSensorChange(section, index, 'tap_action', e.detail.value)}
               label="Tap Action"
             ></hui-action-editor>
-
-            <!-- Preview для list сенсоров -->
-            ${!isTop ? html`
-              <div class="preview-box">
-                <div class="preview-label">Preview:</div>
-                <div class="preview-item">
-                  <div class="list-left">
-                    ${sensor.icon ? html`<ha-icon icon="${sensor.icon}"></ha-icon>` : ''}
-                    <span>${sensor.name || 'Sensor Name'}</span>
-                  </div>
-                  <span class="list-value">${sensor.unit ? `123${sensor.unit}` : '123'}</span>
-                </div>
-              </div>
-            ` : ''}
           </div>
         ` : ''}
       </div>
@@ -592,14 +583,22 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
       sensorsArray[index] = {} as SensorConfig;
     }
 
+    // Создаем копию сенсора с новым значением
+    const updatedSensor = { ...sensorsArray[index] };
+    
     if (value === '' || value === undefined || value === null) {
-      delete (sensorsArray[index] as any)[field];
+      delete (updatedSensor as any)[field];
     } else {
-      (sensorsArray[index] as any)[field] = value;
+      (updatedSensor as any)[field] = value;
     }
 
+    sensorsArray[index] = updatedSensor;
     newConfig[section] = sensorsArray;
     this._config = newConfig;
+    
+    // Принудительно обновляем UI
+    this.requestUpdate();
+    
     fireEvent(this, 'config-changed', { config: newConfig });
   }
 
@@ -618,9 +617,13 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
     };
 
     if (section === 'top_sensors') {
-      newSensor.display_type = 'number';
-      newSensor.graph_detail = 1;
+      newSensor.display_type = 'bar';
+      newSensor.graph_detail = 2;
       newSensor.hours_to_show = 24;
+      newSensor.min = 0;
+      newSensor.max = 100;
+      newSensor.smoothing = true;
+      newSensor.aggregate = 'avg';
     }
 
     sensorsArray.push(newSensor);
@@ -629,6 +632,9 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
     
     // Автоматически раскрываем новый сенсор
     this._expandedSensors.add(`${section}-${sensorsArray.length - 1}`);
+    
+    // Принудительно обновляем UI
+    this.requestUpdate();
     
     fireEvent(this, 'config-changed', { config: newConfig });
   }
@@ -644,6 +650,9 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
     
     // Удаляем из expanded
     this._expandedSensors.delete(`${section}-${index}`);
+    
+    // Принудительно обновляем UI
+    this.requestUpdate();
     
     fireEvent(this, 'config-changed', { config: newConfig });
   }
@@ -803,6 +812,7 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
         align-items: center;
         gap: 8px;
         flex: 1;
+        flex-wrap: wrap;
       }
 
       .sensor-name {
@@ -830,6 +840,15 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
         text-transform: uppercase;
       }
 
+      .sensor-type-badge {
+        background: var(--accent-color, #ff9800);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+
       .sensor-content {
         padding: 16px;
         border-top: 1px solid var(--divider-color, #e0e0e0);
@@ -846,45 +865,6 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
         background: var(--secondary-background-color, #f5f5f5);
         border-radius: 12px;
         border: 1px dashed var(--divider-color, #e0e0e0);
-      }
-
-      .preview-box {
-        margin-top: 8px;
-        padding: 12px;
-        background: var(--card-background-color, #ffffff);
-        border-radius: 8px;
-        border: 1px solid var(--divider-color, #e0e0e0);
-      }
-
-      .preview-label {
-        font-size: 11px;
-        color: var(--secondary-text-color);
-        margin-bottom: 8px;
-        text-transform: uppercase;
-      }
-
-      .preview-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 12px;
-        background: var(--secondary-background-color, #f5f5f5);
-        border-radius: 6px;
-      }
-
-      .preview-item .list-left {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .preview-item .list-left ha-icon {
-        --mdc-icon-size: 16px;
-        color: var(--secondary-text-color);
-      }
-
-      .preview-item .list-value {
-        color: var(--primary-text-color);
       }
 
       ha-textfield,
