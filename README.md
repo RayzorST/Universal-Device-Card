@@ -3,13 +3,13 @@
 
 A highly customizable Home Assistant Lovelace card for monitoring routers, access points, and mesh network devices.
 
-![Preview](photo_2026-03-13_23-04-43.jpg)
+![Preview](images/preview.png)
 
 ## 🌟 Features
 
 🎯 Universal Compatibility - Works with any router integration that provides sensors
 
-🔄 Controller & Repeater Support - Different badges and icons for main routers and repeaters
+🔄 Controller & Repeater Support - Different badges for main routers and repeaters
 
 📊 Flexible Layout - Two display sections: card view (top) and list view (bottom)
 
@@ -24,10 +24,9 @@ A highly customizable Home Assistant Lovelace card for monitoring routers, acces
 ## 📦 Installation
 ### Via HACS (Recommended)
 1. HACS > Integrations > ⋮ > Custom repositories
-2. URL: `https://github.com/YOUR_USERNAME/keenetic_router_pro`
-3. Category: Integration
-4. Search for "Keenetic Router Pro" and install
-5. Restart Home Assistant
+2. URL: `https://github.com/RayzorST/Router-Card`
+3. Category: Plugin
+4. Search for "Router-Card" and install
 ### Manual Installation
 1. Download `router-card.js` from the latest release
 2. Place the file in `/config/www/community/router-card/`
@@ -43,99 +42,67 @@ A highly customizable Home Assistant Lovelace card for monitoring routers, acces
 
 ~~~yaml
 type: custom:router-card
-name: Keenetic Voyager Pro
+name: Voyager Pro
 icon: mdi:router-wireless
 controller: true
-theme: default
-wan_status_entity: sensor.keenetic_wan_status
-wan_ip_entity: sensor.keenetic_wan_ip
+update_section:
+  enabled: true
+  entity: update.router_update
+  label: Update Available
+  tap_action:
+    action: more-info
+status_section:
+  enabled: true
+  left_entity: input_boolean.router_status
+  left_label: Status
+  right_entity: input_text.router_ip
+  right_label: IP
+  tap_action:
+    action: more-info
+reboot_button:
+  enabled: true
+  entity: ""
+  confirmation: true
+  label: Reboot
+  icon: mdi:restart
 top_sensors:
-  - entity: sensor.keenetic_cpu_load
-    name: CPU Load
-    unit: '%'
-    show_bar: true
-  - entity: sensor.keenetic_memory_usage
+  - entity: sensor.router_cpu
+    name: CPU
+    unit: ""
+    icon: ""
+    tap_action:
+      action: more-info
+    display_type: graph
+    graph_detail: 2
+    hours_to_show: 1
+    min: 0
+    max: 100
+    smoothing: true
+    aggregate: avg
+  - entity: sensor.router_memory
     name: Memory
-    unit: '%'
-    show_bar: true
-  - entity: sensor.keenetic_uptime
-    name: Uptime
-  - entity: sensor.keenetic_connected_clients
+    unit: ""
+    icon: ""
+    tap_action:
+      action: more-info
+    display_type: bar
+    graph_detail: 2
+    hours_to_show: 24
+    min: 0
+    max: 100
+    smoothing: true
+    aggregate: avg
+bottom_sensors:
+  - entity: sensor.router_clients
     name: Clients
-    icon: mdi:devices
-bottom_sensors:
-  - entity: sensor.keenetic_wifi_2g_temperature
-    name: WiFi 2.4GHz Temp
-    unit: °C
-  - entity: sensor.keenetic_wifi_5g_temperature
-    name: WiFi 5GHz Temp
-    unit: °C
-  - entity: sensor.keenetic_wan_rx
-    name: WAN RX
-    unit: GB
-  - entity: sensor.keenetic_wan_tx
-    name: WAN TX
-    unit: GB
-~~~
-
-### Controller Configuration Example
-
-[Image: Controller Card Example]
-
-~~~yaml
-type: custom:router-card
-name: Keenetic Voyager Pro
-icon: mdi:router-wireless
-controller: true
-theme: default
-wan_status_entity: sensor.keenetic_voyager_wan_status
-wan_ip_entity: sensor.keenetic_voyager_wan_ip
-top_sensors:
-  - entity: sensor.keenetic_voyager_cpu_load
-    name: CPU Load
-    unit: '%'
-    show_bar: true
-  - entity: sensor.keenetic_voyager_memory_usage
-    name: Memory
-    unit: '%'
-    show_bar: true
-  - entity: sensor.keenetic_voyager_uptime
-    name: Uptime
-  - entity: sensor.keenetic_voyager_connected_clients
-    name: Connected Clients
-    icon: mdi:devices
-  - entity: sensor.keenetic_voyager_extender_count
+    unit: ""
+    icon: mdi:account-group
+    tap_action:
+      action: more-info
+  - entity: input_number.router_extenders
     name: Extenders
-    icon: mdi:hubspot
-bottom_sensors:
-  - entity: sensor.keenetic_voyager_wifi_2g_temperature
-    name: WiFi 2.4GHz Temperature
-    unit: °C
-  - entity: sensor.keenetic_voyager_wifi_5g_temperature
-    name: WiFi 5GHz Temperature
-    unit: °C
-  - entity: sensor.keenetic_voyager_wan_rx
-    name: WAN Download
-    unit: GB
-  - entity: sensor.keenetic_voyager_wan_tx
-    name: WAN Upload
-    unit: GB
-  - entity: sensor.keenetic_voyager_lan_rx
-    name: LAN RX
-    unit: GB
-  - entity: sensor.keenetic_voyager_lan_tx
-    name: LAN TX
-    unit: GB
-  - entity: sensor.keenetic_voyager_wifi_2g_rx
-    name: WiFi 2.4G RX
-    unit: GB
-  - entity: sensor.keenetic_voyager_wifi_2g_tx
-    name: WiFi 2.4G TX
-    unit: GB
-  - entity: sensor.keenetic_voyager_wifi_5g_rx
-    name: WiFi 5G RX
-    unit: GB
-  - entity: sensor.keenetic_voyager_wifi_5g_tx
-    name: WiFi 5G TX
-    unit: GB
+    unit: ""
+    icon: mdi:access-point-network
+    tap_action:
+      action: more-info
 ~~~

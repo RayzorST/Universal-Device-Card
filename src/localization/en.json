@@ -1,0 +1,91 @@
+{
+  "common": {
+    "enable": "Enable",
+    "tapAction": "Tap Action"
+  },
+  "tabs": {
+    "general": "General",
+    "status": "Status",
+    "topCards": "Top Cards",
+    "bottomList": "Bottom List"
+  },
+  "basic": {
+    "title": "Basic Settings",
+    "cardName": "Card Name",
+    "cardNamePlaceholder": "Router",
+    "cardIcon": "Card Icon",
+    "controllerMode": "Controller Mode",
+    "theme": "Theme",
+    "themeDefault": "Default",
+    "themeDark": "Dark",
+    "themeLight": "Light"
+  },
+  "update": {
+    "title": "Update Section",
+    "entity": "Update Entity",
+    "available": "Update Available"
+  },
+  "reboot": {
+    "title": "Reboot Button",
+    "entity": "Button Entity",
+    "icon": "Button Icon",
+    "confirmation": "Show Confirmation",
+    "button": "Reboot"
+  },
+  "status": {
+    "title": "Status Section",
+    "leftColumn": "Left Column",
+    "rightColumn": "Right Column",
+    "entity": "Entity",
+    "label": "Label",
+    "status": "Status",
+    "ip": "IP",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "on": "On",
+    "off": "Off",
+    "online": "Online",
+    "offline": "Offline",
+    "up": "Up",
+    "down": "Down"
+  },
+  "sensors": {
+    "add": "Add Sensor",
+    "empty": "No sensors configured. Click \"Add Sensor\" to start.",
+    "unnamed": "Unnamed Sensor",
+    "tap": "tap",
+    "remove": "Remove sensor",
+    "entity": "Entity",
+    "displayName": "Display Name",
+    "namePlaceholder": "Sensor Name",
+    "icon": "Icon (optional)",
+    "unit": "Unit",
+    "unitPlaceholder": "% or °C or GB",
+    "displayType": "Display Type",
+    "graphDetail": "Graph Detail",
+    "graphDetailLow": "Low (compact)",
+    "graphDetailMedium": "Medium",
+    "graphDetailHigh": "High (detailed)",
+    "hoursToShow": "Hours to Show",
+    "hours": "hours",
+    "smoothing": "Smoothing",
+    "aggregation": "Aggregation",
+    "minValue": "Min Value",
+    "maxValue": "Max Value",
+    "newSensor": "New Sensor",
+    "types": {
+      "bar": "Progress Bar",
+      "graph": "Graph"
+    },
+    "aggregate": {
+      "avg": "Average",
+      "max": "Maximum",
+      "min": "Minimum",
+      "last": "Last",
+      "first": "First",
+      "sum": "Sum",
+      "delta": "Delta",
+      "diff": "Difference"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import typescript from '@rollup/plugin-typescript';
 import resolve from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
+import json from '@rollup/plugin-json';
 
 const dev = process.env.ROLLUP_WATCH === 'true';
 
@@ -13,6 +14,7 @@ export default {
     inlineDynamicImports: true,
   },
   plugins: [
+    json(), 
     resolve({
       browser: true,
       dedupe: ['lit', 'custom-card-helpers'],
