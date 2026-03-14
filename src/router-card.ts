@@ -2,6 +2,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 import { loadHaComponents } from '@kipk/load-ha-components';
+import { getLocalizedStringForHass } from './localization';
 import './router-card-editor';
 import './cards/number-card';
 import './cards/bar-card';
@@ -24,6 +25,11 @@ export class RouterCard extends LitElement implements LovelaceCard {
   @state() private config!: RouterCardConfig;
   @state() private graphData: Record<string, HistoryData[]> = {};
   @state() private componentsLoaded = false;
+
+  // Получаем перевод для конкретного ключа
+  private _t(key: 'badge.controller' | 'badge.repeater' | 'reboot.button' | 'update.available'): string {
+    return getLocalizedStringForHass(this.hass, key);
+  }
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     return document.createElement('router-card-editor');
@@ -52,7 +58,7 @@ export class RouterCard extends LitElement implements LovelaceCard {
       },
       reboot_button: {
         enabled: false,
-        entity: '',           // заменяем service на entity
+        entity: '',
         confirmation: true,
         label: 'Reboot',
         icon: 'mdi:restart',
@@ -152,23 +158,13 @@ export class RouterCard extends LitElement implements LovelaceCard {
     const entity = rebootConfig.entity;
     if (!entity) return;
     
-    // Определяем домен из entity_id
     const domain = entity.split('.')[0];
     
-    // Для button entities используем сервис press
     if (domain === 'button') {
-      this.hass.callService('button', 'press', {
-        entity_id: entity
-      });
-    } 
-    // Для script entities используем сервис script.turn_on или просто script.название
-    else if (domain === 'script') {
-      this.hass.callService('script', 'turn_on', {
-        entity_id: entity
-      });
-    }
-    // Для остальных случаев пробуем вызвать сервис напрямую
-    else {
+      this.hass.callService('button', 'press', { entity_id: entity });
+    } else if (domain === 'script') {
+      this.hass.callService('script', 'turn_on', { entity_id: entity });
+    } else {
       const [serviceDomain, serviceName] = entity.split('.');
       this.hass.callService(serviceDomain, serviceName, rebootConfig.service_data || {});
     }
@@ -226,13 +222,7 @@ export class RouterCard extends LitElement implements LovelaceCard {
       case 'bar':
         return html`<router-bar-card .sensor=${sensor} .data=${data} .onClick=${this._handleTap.bind(this)}></router-bar-card>`;
       case 'graph':
-        return html`<router-graph-card 
-          .sensor=${sensor} 
-          .data=${data} 
-          .graphData=${this.graphData}
-          .hass=${this.hass}  // ← добавляем передачу hass
-          .onClick=${this._handleTap.bind(this)}>
-        </router-graph-card>`;
+        return html`<router-graph-card .sensor=${sensor} .data=${data} .graphData=${this.graphData} .hass=${this.hass} .onClick=${this._handleTap.bind(this)}></router-graph-card>`;
       case 'badge':
         return html`<router-badge-card .sensor=${sensor} .data=${data} .onClick=${this._handleTap.bind(this)}></router-badge-card>`;
       case 'number':
@@ -253,6 +243,11 @@ export class RouterCard extends LitElement implements LovelaceCard {
                       this.config.update_section.entity && 
                       this._checkUpdateAvailable(this.config.update_section.entity);
 
+    // Используем переводы для 3 надписей
+    const controllerText = this.config.controller ? this._t('badge.controller') : this._t('badge.repeater');
+    const rebootText = this.config.reboot_button?.label || this._t('reboot.button');
+    const updateText = this.config.update_section?.label || this._t('update.available');
+
     return html`
       <ha-card class="router-card ${this.config.theme || 'default'}">
         <div class="header">
@@ -261,28 +256,25 @@ export class RouterCard extends LitElement implements LovelaceCard {
             <div class="title-container">
               <span class="title">${this.config.name || 'Router'}</span>
             </div>
-            ${this.config.controller 
-              ? html`<span class="badge controller">Controller</span>` 
-              : html`<span class="badge repeater">Repeater</span>`}
+            <span class="badge ${this.config.controller ? 'controller' : 'repeater'}">${controllerText}</span>
           </div>
           <div class="header-right">
             ${this.config.reboot_button?.enabled 
               ? html`<span class="badge reboot-badge" @click=${this._handleReboot}>
                   <ha-icon icon="${this.config.reboot_button.icon || ICONS.RESTART}"></ha-icon>
-                  ${this.config.reboot_button.label || 'Reboot'}
+                  ${rebootText}
                 </span>` 
               : nothing}
           </div>
         </div>
 
         <!-- Update Section -->
-        <router-update-section
-          .enabled=${this.config.update_section?.enabled || false}
-          .config=${this.config.update_section || {}}
-          .updateAvailable=${showUpdate}
-          .tap_action=${this.config.update_section?.tap_action}
-          .onClick=${this._handleTap.bind(this)}
-        ></router-update-section>
+        ${showUpdate ? html`
+          <div class="update-section" @click=${(e: Event) => this._handleTap(this.config.update_section?.tap_action, this.config.update_section?.entity)}>
+            <ha-icon icon="mdi:arrow-up-circle"></ha-icon>
+            <span>${updateText}</span>
+          </div>
+        ` : nothing}
 
         <!-- Status Section -->
         <router-status-section
@@ -292,6 +284,7 @@ export class RouterCard extends LitElement implements LovelaceCard {
           .rightData=${rightData}
           .tap_action=${this.config.status_section?.tap_action}
           .onClick=${this._handleTap.bind(this)}
+          .hass=${this.hass}
         ></router-status-section>
 
         <!-- Top Sensors (Cards) -->
@@ -317,7 +310,7 @@ export class RouterCard extends LitElement implements LovelaceCard {
           </div>
         ` : nothing}
 
-        <!-- Bottom Sensors (List) - всегда с отступом сверху -->
+        <!-- Bottom Sensors (List) -->
         <div class="list-section-wrapper">
           <router-list-section
             .enabled=${(this.config.bottom_sensors?.length || 0) > 0}
@@ -362,19 +355,19 @@ export class RouterCard extends LitElement implements LovelaceCard {
         display: flex;
         align-items: center;
         gap: 8px;
-        min-width: 0; /* Позволяет flex-элементам сжиматься */
+        min-width: 0;
         flex: 1;
       }
       
       .header-left ha-icon { 
         --mdc-icon-size: 28px; 
         color: var(--primary-color, #03a9f4);
-        flex-shrink: 0; /* Запрещаем сжимать иконку */
+        flex-shrink: 0;
       }
       
       .title-container {
-        min-width: 0; /* Позволяет контейнеру сжиматься */
-        flex: 0 1 auto; /* Может сжиматься, но не растягиваться */
+        min-width: 0;
+        flex: 0 1 auto;
       }
       
       .title {
@@ -396,7 +389,7 @@ export class RouterCard extends LitElement implements LovelaceCard {
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        flex-shrink: 0; /* Запрещаем сжимать бейджи */
+        flex-shrink: 0;
       }
       
       .badge.controller {
@@ -412,9 +405,9 @@ export class RouterCard extends LitElement implements LovelaceCard {
       .header-right {
         display: flex;
         align-items: center;
-        gap: 4px; /* Минимальное расстояние между элементами */
+        gap: 4px;
         flex-shrink: 0;
-        margin-left: 4px; /* Дополнительный отступ слева для минимального расстояния */
+        margin-left: 4px;
       }
       
       .badge.reboot-badge { 
@@ -433,6 +426,37 @@ export class RouterCard extends LitElement implements LovelaceCard {
       .badge.reboot-badge ha-icon { 
         --mdc-icon-size: 14px; 
         color: white; 
+      }
+      
+      .update-section {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 16px;
+        margin-bottom: 16px;
+        background: rgba(243, 156, 28, 0.2);
+        border: 1px solid rgba(243, 156, 28, 0.5);
+        border-radius: 8px;
+        color: #f39c12;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        cursor: pointer;
+      }
+
+      .update-section:hover {
+        background: rgba(243, 156, 28, 0.3);
+        transform: scale(1.02);
+      }
+
+      .dark .update-section {
+        background: rgba(243, 156, 28, 0.15);
+      }
+
+      .update-section ha-icon {
+        --mdc-icon-size: 18px;
+        color: #f39c12;
       }
       
       .top-section {
@@ -492,7 +516,6 @@ export class RouterCard extends LitElement implements LovelaceCard {
         margin-top: 16px;
       }
 
-      /* Адаптивность для мобильных */
       @media (max-width: 600px) {
         ha-card {
           padding: 12px;

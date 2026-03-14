@@ -24,7 +24,7 @@ export function getLocalizedString(lang: Language, key: string, params?: Record<
     console.warn(`Translation value is not a string: ${key} for language: ${lang}`);
     return key;
   }
-
+  
   if (params) {
     return value.replace(/\{\{(\w+)\}\}/g, (match, param) => params[param] || match);
   }
@@ -35,4 +35,14 @@ export function getLocalizedString(lang: Language, key: string, params?: Record<
 export function getLocalizedStringForHass(hass: any, key: string, params?: Record<string, string>): string {
   const lang = (hass?.locale?.language || 'en') as Language;
   return getLocalizedString(lang, key, params);
+}
+
+let currentLanguage: Language = 'en';
+
+export function setLanguage(lang: Language) {
+  currentLanguage = lang;
+}
+
+export function t(key: string, params?: Record<string, string>): string {
+  return getLocalizedString(currentLanguage, key, params);
 }

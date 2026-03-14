@@ -19,6 +19,8 @@ A highly customizable Home Assistant Lovelace card for monitoring routers, acces
 
 ⬇️ Updates - Allows you to track the availability of updates for the router
 
+🌐 Localization: English, Русский (automatically uses your HA language)
+
 🌙 Theme Support - Default, dark, and light themes
 
 ## 📦 Installation

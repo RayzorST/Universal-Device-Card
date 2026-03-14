@@ -1,7 +1,16 @@
 {
   "common": {
     "enable": "Enable",
-    "tapAction": "Tap Action"
+    "tapAction": "Tap Action",
+    "loading": "Loading...",
+    "router": "Router"
+  },
+  "error": {
+    "entityNotFound": "Entity not found"
+  },
+  "badge": {
+    "controller": "Controller",
+    "repeater": "Repeater"
   },
   "tabs": {
     "general": "General",
@@ -30,7 +39,8 @@
     "entity": "Button Entity",
     "icon": "Button Icon",
     "confirmation": "Show Confirmation",
-    "button": "Reboot"
+    "button": "Reboot",
+    "confirm": "Are you sure you want to reboot the router?"
   },
   "status": {
     "title": "Status Section",
