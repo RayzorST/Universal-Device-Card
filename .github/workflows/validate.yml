@@ -1,4 +1,4 @@
-vname: Validate
+name: Validate
 
 on:
   push:
