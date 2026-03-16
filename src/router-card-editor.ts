@@ -4,6 +4,7 @@ import { LovelaceCardEditor } from 'custom-card-helpers';
 import { fireEvent } from 'custom-card-helpers';
 import { RouterCardConfig, SensorConfig, UpdateSectionConfig, StatusSectionConfig, RebootButtonConfig } from './types/config';
 import { getLocalizedStringForHass } from './localization';
+import { loadHaComponents } from '@kipk/load-ha-components';
 
 const ICONS = {
   COG: 'mdi:cog',
@@ -24,9 +25,18 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
   @state() private _config!: RouterCardConfig;
   @state() private _activeTab: 'general' | 'status' | 'top' | 'bottom' = 'general';
   @state() private _expandedSensors: Set<string> = new Set();
+  @state() private _componentsLoaded = false;
 
   private _localize(key: string, params?: Record<string, string>): string {
     return getLocalizedStringForHass(this.hass, key, params);
+  }
+
+  public async connectedCallback() {
+    super.connectedCallback();
+    if (!this._componentsLoaded) {
+      await loadHaComponents();
+      this._componentsLoaded = true;
+    }
   }
 
   public setConfig(config: RouterCardConfig): void {
@@ -79,7 +89,7 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
   }
 
   protected render() {
-    if (!this.hass || !this._config) {
+    if (!this.hass || !this._config || !this._componentsLoaded) {
       return html``;
     }
 
@@ -197,12 +207,15 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
               include-domains='["update", "binary_sensor"]'
             ></ha-entity-picker>
 
-            <hui-action-editor
+            <ha-selector
               .hass=${this.hass}
               .value=${updateSection.tap_action || { action: 'more-info' }}
               @value-changed=${(e: any) => this._updateNested('update_section', 'tap_action', e.detail.value)}
+              .selector=${{
+                ui_action: {}
+              }}
               label=${this._localize('common.tapAction')}
-            ></hui-action-editor>
+            ></ha-selector>
           ` : ''}
         </div>
 
@@ -288,12 +301,15 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
               label=${this._localize('status.label')}
             ></ha-textfield>
 
-            <hui-action-editor
+            <ha-selector
               .hass=${this.hass}
               .value=${status.tap_action || { action: 'more-info' }}
               @value-changed=${(e: any) => this._updateNested('status_section', 'tap_action', e.detail.value)}
+              .selector=${{
+                ui_action: {}
+              }}
               label=${this._localize('common.tapAction')}
-            ></hui-action-editor>
+            ></ha-selector>
           ` : ''}
         </div>
       </div>
@@ -446,12 +462,15 @@ export class RouterCardEditor extends LitElement implements LovelaceCardEditor {
             ` : ''}
 
             <!-- Tap Action -->
-            <hui-action-editor
+            <ha-selector
               .hass=${this.hass}
               .value=${sensor.tap_action || { action: 'more-info' }}
               @value-changed=${(e: any) => this._updateSensor(section, index, 'tap_action', e.detail.value)}
+              .selector=${{
+                ui_action: {}
+              }}
               label=${this._localize('common.tapAction')}
-            ></hui-action-editor>
+            ></ha-selector>
           </div>
         ` : ''}
       </div>
