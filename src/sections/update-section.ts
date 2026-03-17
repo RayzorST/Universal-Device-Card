@@ -37,7 +37,7 @@ export class UpdateSection extends BaseSection {
           gap: 8px;
           padding: 10px 16px;
           margin: 0px 16px 16px 16px;
-          background: rgba(var(--accent-color-rgb, 243, 156, 28), 0.2);
+          background: var(--secondary-background-color);
           border: 1px solid var(--accent-color, #f39c12);
           border-radius: 8px;
           color: var(--accent-color, #f39c12);
@@ -48,7 +48,6 @@ export class UpdateSection extends BaseSection {
         }
 
         .update-section:hover {
-          background: rgba(var(--accent-color-rgb, 243, 156, 28), 0.3);
           transform: scale(1.02);
         }
 

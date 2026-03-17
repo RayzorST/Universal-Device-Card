@@ -308,7 +308,7 @@ export class GraphCard extends BaseCard {
           <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="graph-svg">
             <defs>
               <linearGradient id="grad-${entityId}" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="var(--accent-color, var(--primary-color, #03a9f4))" stop-opacity="0.2"/>
+                <stop offset="0%" stop-color="var(--accent-color, var(--primary-color, #03a9f4))" stop-opacity="0.3"/>
                 <stop offset="80%" stop-color="var(--accent-color, var(--primary-color, #03a9f4))" stop-opacity="0.05"/>
                 <stop offset="100%" stop-color="var(--accent-color, var(--primary-color, #03a9f4))" stop-opacity="0"/>
               </linearGradient>
