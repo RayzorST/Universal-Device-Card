@@ -1,3 +1,5 @@
+import { LovelaceCardConfig } from 'custom-card-helpers';
+
 // Типы для действий по нажатию
 export interface TapActionConfig {
   action: 'more-info' | 'navigate' | 'url' | 'call-service' | 'toggle' | 'none';
@@ -7,34 +9,7 @@ export interface TapActionConfig {
   service_data?: Record<string, any>;
 }
 
-// Конфигурация сенсора
-export interface SensorConfig {
-  entity: string;
-  name: string;
-  icon?: string;
-  unit?: string;
-  display_type?: 'bar' | 'graph';
-  graph_detail?: 1 | 2 | 3;
-  hours_to_show?: number;
-  min?: number;
-  max?: number;
-  aggregate?: 'avg' | 'median' | 'max' | 'min' | 'first' | 'last' | 'sum' | 'delta' | 'diff';
-  smoothing?: boolean;
-  logarithmic?: boolean;
-  tap_action?: TapActionConfig;
-}
-
-// Статус секция
-export interface StatusSectionConfig {
-  enabled: boolean;
-  left_entity: string;
-  left_label?: string;
-  right_entity: string;
-  right_label?: string;
-  tap_action?: TapActionConfig;
-}
-
-// Секция обновлений
+// Конфигурация секции обновления
 export interface UpdateSectionConfig {
   enabled: boolean;
   entity: string;
@@ -42,50 +17,27 @@ export interface UpdateSectionConfig {
   tap_action?: TapActionConfig;
 }
 
-// Кнопка перезагрузки
-export interface RebootButtonConfig {
+// Конфигурация кнопки действия
+export interface ActionButtonConfig {
   enabled: boolean;
   entity?: string;
   confirmation?: boolean;
   label?: string;
   icon?: string;
+  tap_action?: TapActionConfig;
   service_data?: Record<string, any>;
 }
 
 // Основная конфигурация карточки
-export interface RouterCardConfig {
+export interface UniversalDeviceCardConfig {
   type: string;
   name?: string;
   icon?: string;
-  controller?: boolean;
   theme?: 'default' | 'dark' | 'light';
+  device_id?: string; 
   update_section?: UpdateSectionConfig;
-  status_section?: StatusSectionConfig;
-  reboot_button?: RebootButtonConfig;
-  top_sensors: SensorConfig[];
-  bottom_sensors: SensorConfig[];
-}
-
-// Данные сенсора
-export interface SensorData {
-  state: string;
-  attributes: Record<string, any>;
-  unit?: string;
-}
-
-// Данные истории
-export interface HistoryData {
-  state: string;
-  last_changed: string;
-  last_updated?: string;
-  attributes?: Record<string, any>;
-}
-
-// Интерфейс для свойств карточки
-export interface CardProps {
-  sensor: SensorConfig;
-  data: SensorData;
-  hass?: any;
-  graphData?: Record<string, HistoryData[]>;
-  onClick?: (action?: TapActionConfig, entityId?: string) => void;
+  action_button?: ActionButtonConfig;
+  cards: LovelaceCardConfig[];
+  controller?: boolean;
+  reboot_button?: ActionButtonConfig;
 }

@@ -1,8 +1,8 @@
 {
-  "name": "router-card",
-  "version": "1.0.1",
-  "description": "Custom Router Card for Home Assistant",
-  "main": "dist/router-card.js",
+  "name": "universal-device-card",
+  "version": "1.0.0",
+  "description": "Universal Device Card for Home Assistant",
+  "main": "dist/universal-device-card.js",
   "type": "module",
   "scripts": {
     "build": "rollup -c",

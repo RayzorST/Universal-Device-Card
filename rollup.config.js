@@ -6,9 +6,9 @@ import json from '@rollup/plugin-json';
 const dev = process.env.ROLLUP_WATCH === 'true';
 
 export default {
-  input: 'src/router-card.ts',
+  input: 'src/universal-device-card.ts',
   output: {
-    file: 'dist/router-card.js',
+    file: 'dist/universal-device-card.js',
     format: 'es',
     sourcemap: dev,
     inlineDynamicImports: true,

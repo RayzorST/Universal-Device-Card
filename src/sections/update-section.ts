@@ -1,3 +1,4 @@
+// sections/update-section.ts
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { BaseSection } from './base-section';
@@ -16,10 +17,10 @@ export class UpdateSection extends BaseSection {
   renderContent(): TemplateResult {
     if (!this.updateAvailable) return html``;
 
-    const label = this._localize('update.available');
+    const label = this.config?.label || this._localize('update.available');
 
     return html`
-      <div class="update-section" @click=${(e: Event) => this._handleClick(e, this.config.entity)}>
+      <div class="update-section" @click=${(e: Event) => this._handleClick(e, this.config?.entity)}>
         <ha-icon icon="mdi:arrow-up-circle"></ha-icon>
         <span>${label}</span>
       </div>
